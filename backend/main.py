@@ -2,8 +2,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
-import jwt
-from datetime import datetime, timedelta
+import jwt  # This should now work with PyJWT
+from datetime import datetime, timedelta, timezone
 import os
 from enum import Enum
 import asyncpg
@@ -89,16 +89,16 @@ def validate_email(email):
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 def create_refresh_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -160,14 +160,14 @@ async def health_check():
         return jsonify({
             "status": "healthy",
             "database": "connected" if result else "disconnected",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         })
     except Exception as e:
         return jsonify({
             "status": "unhealthy",
             "database": "disconnected",
             "error": str(e),
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }), 500
 
 # Auth endpoints
@@ -402,6 +402,10 @@ async def get_products():
     
     products = await sql(query, params)
     
+    # Convert price to float for all products
+    for product in products:
+        product["price"] = float(product["price"])
+    
     # Get total count
     count_query = "SELECT COUNT(*) as total FROM products WHERE is_active = true"
     count_params = []
@@ -433,6 +437,9 @@ async def get_product(product_id):
     product = await sql("SELECT * FROM products WHERE id = $1 AND is_active = true", [product_id])
     if not product:
         return jsonify({"message": "Product not found"}), 404
+    
+    # Convert price to float
+    product[0]["price"] = float(product[0]["price"])
     return jsonify(product[0])
 
 @app.route('/vendor/products', methods=['POST'])
@@ -521,7 +528,7 @@ async def get_cart(current_user):
         WHERE ci.user_id = $1
     """, [current_user["id"]])
     
-    total = sum(item["price"] * item["quantity"] for item in cart_items)
+    total = sum(float(item["price"]) * item["quantity"] for item in cart_items)
     
     items = [
         {
@@ -531,7 +538,7 @@ async def get_cart(current_user):
             "product": {
                 "id": item["product_id"],
                 "name": item["name"],
-                "price": item["price"],
+                "price": float(item["price"]),  # Convert to float
                 "image_url": item["image_url"]
             }
         }
@@ -648,8 +655,8 @@ async def create_payment(current_user):
     if not cart_items:
         return jsonify({"message": "Cart is empty"}), 400
     
-    # Calculate total
-    total_amount = sum(item["price"] * item["quantity"] for item in cart_items)
+    # Calculate total with proper float conversion
+    total_amount = sum(float(item["price"]) * item["quantity"] for item in cart_items)
     
     if payment_method == "paypal" and paypal_client_id:
         # Create PayPal payment
@@ -658,7 +665,7 @@ async def create_payment(current_user):
             items.append({
                 "name": item["name"],
                 "sku": str(item["product_id"]),
-                "price": str(item["price"]),
+                "price": str(float(item["price"])),  # Ensure float conversion
                 "currency": "USD",
                 "quantity": item["quantity"]
             })
@@ -696,7 +703,7 @@ async def create_payment(current_user):
             for cart_item in cart_items:
                 await sql(
                     "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)",
-                    [order["id"], cart_item["product_id"], cart_item["quantity"], cart_item["price"]]
+                    [order["id"], cart_item["product_id"], cart_item["quantity"], float(cart_item["price"])]
                 )
             
             # Get approval URL
@@ -719,15 +726,15 @@ async def create_payment(current_user):
         # Fallback to mock payment for other methods
         order_result = await sql(
             "INSERT INTO orders (user_id, total_amount, payment_intent_id) VALUES ($1, $2, $3) RETURNING *",
-            [current_user["id"], total_amount, f"mock_{int(datetime.utcnow().timestamp())}"]
+            [current_user["id"], total_amount, f"mock_{int(datetime.now(timezone.utc).timestamp())}"]
         )
         order = order_result[0]
         
-        # Create order items
+        # Create order items with proper float conversion
         for cart_item in cart_items:
             await sql(
                 "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES ($1, $2, $3, $4)",
-                [order["id"], cart_item["product_id"], cart_item["quantity"], cart_item["price"]]
+                [order["id"], cart_item["product_id"], cart_item["quantity"], float(cart_item["price"])]
             )
         
         # Clear cart
@@ -807,6 +814,10 @@ async def get_user_orders(current_user):
         LIMIT $2 OFFSET $3
     """, [current_user["id"], limit, skip])
     
+    # Convert total_amount to float for each order
+    for order in orders:
+        order["total_amount"] = float(order["total_amount"])
+    
     # Get items for each order
     for order in orders:
         items = await sql("""
@@ -816,6 +827,11 @@ async def get_user_orders(current_user):
             JOIN products p ON oi.product_id = p.id
             WHERE oi.order_id = $1
         """, [order["id"]])
+        
+        # Convert item prices to float
+        for item in items:
+            item["price"] = float(item["price"])
+        
         order["items"] = items
     
     return jsonify(orders)
@@ -834,6 +850,9 @@ async def get_order_details(current_user, order_id):
     if not order:
         return jsonify({"message": "Order not found"}), 404
     
+    # Convert total_amount to float
+    order[0]["total_amount"] = float(order[0]["total_amount"])
+    
     # Get order items
     items = await sql("""
         SELECT oi.id, oi.product_id, oi.quantity, oi.price,
@@ -842,6 +861,10 @@ async def get_order_details(current_user, order_id):
         JOIN products p ON oi.product_id = p.id
         WHERE oi.order_id = $1
     """, [order_id])
+    
+    # Convert item prices to float
+    for item in items:
+        item["price"] = float(item["price"])
     
     order_details = order[0]
     order_details["items"] = items

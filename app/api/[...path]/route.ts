@@ -1,7 +1,7 @@
 // app/api/[...path]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND_URL = "https://e-store-tau-sooty.vercel.app"
+const BACKEND_URL = "http://localhost:8000"
 
 // Handle all HTTP methods
 async function handleRequest(

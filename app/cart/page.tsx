@@ -67,6 +67,13 @@ export default function CartPage() {
     fetchCart()
   }, [user, isAuthenticated])
 
+  // Helper function to safely convert price to number
+  const getPrice = (price: any): number => {
+    if (typeof price === 'number') return price
+    if (typeof price === 'string') return parseFloat(price) || 0
+    return 0
+  }
+
   const subtotal = total
   const shippingCost = subtotal > 50 ? 0 : 9.99
   const taxRate = 0.08
@@ -268,103 +275,108 @@ export default function CartPage() {
 
               {/* Cart Items List */}
               <div className="space-y-4">
-                {items.map((item) => (
-                  <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-white/20 dark:border-gray-700/20">
-                    <CardContent className="p-6">
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                        {/* Product Image */}
-                        <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden">
-                          <Image
-                            src={item.product.image_url || "/placeholder.svg?height=96&width=96"}
-                            alt={item.product.name}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                        
-                        {/* Product Info */}
-                        <div className="flex-1 min-w-0 space-y-2">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100 line-clamp-1">
-                                {item.product.name}
-                              </h3>
-                              <p className="text-purple-600 font-medium text-lg">
-                                ${item.product.price.toFixed(2)}
-                              </p>
-                            </div>
-                            <Badge variant="outline" className="ml-2">
-                              In Stock
-                            </Badge>
+                {items.map((item) => {
+                  const itemPrice = getPrice(item.product.price)
+                  const itemTotal = itemPrice * item.quantity
+                  
+                  return (
+                    <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-white/20 dark:border-gray-700/20">
+                      <CardContent className="p-6">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                          {/* Product Image */}
+                          <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden">
+                            <Image
+                              src={item.product.image_url || "/placeholder.svg?height=96&width=96"}
+                              alt={item.product.name}
+                              fill
+                              className="object-cover"
+                            />
                           </div>
                           
-                          {/* Actions Row */}
-                          <div className="flex flex-wrap items-center gap-4 pt-2">
-                            {/* Quantity Controls */}
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Qty:</span>
-                              <div className="flex items-center border rounded-lg bg-white/50">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
-                                  className="h-8 w-8 p-0 hover:bg-purple-100"
-                                >
-                                  <Minus className="h-4 w-4" />
-                                </Button>
-                                <span className="w-12 text-center font-medium">{item.quantity}</span>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
-                                  className="h-8 w-8 p-0 hover:bg-purple-100"
-                                >
-                                  <Plus className="h-4 w-4" />
-                                </Button>
+                          {/* Product Info */}
+                          <div className="flex-1 min-w-0 space-y-2">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100 line-clamp-1">
+                                  {item.product.name}
+                                </h3>
+                                <p className="text-purple-600 font-medium text-lg">
+                                  ${itemPrice.toFixed(2)}
+                                </p>
                               </div>
+                              <Badge variant="outline" className="ml-2">
+                                In Stock
+                              </Badge>
                             </div>
                             
-                            {/* Item Total */}
-                            <div className="text-right">
-                              <p className="font-bold text-xl bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                                ${(item.product.price * item.quantity).toFixed(2)}
-                              </p>
+                            {/* Actions Row */}
+                            <div className="flex flex-wrap items-center gap-4 pt-2">
+                              {/* Quantity Controls */}
+                              <div className="flex items-center gap-3">
+                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Qty:</span>
+                                <div className="flex items-center border rounded-lg bg-white/50">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                                    className="h-8 w-8 p-0 hover:bg-purple-100"
+                                  >
+                                    <Minus className="h-4 w-4" />
+                                  </Button>
+                                  <span className="w-12 text-center font-medium">{item.quantity}</span>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                                    className="h-8 w-8 p-0 hover:bg-purple-100"
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                              
+                              {/* Item Total */}
+                              <div className="text-right">
+                                <p className="font-bold text-xl bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                                  ${itemTotal.toFixed(2)}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                      
-                      {/* Action Buttons */}
-                      <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => moveToWishlist(item.product.id)}
-                            className="text-gray-600 hover:text-purple-600"
-                          >
-                            <Heart className="h-4 w-4 mr-1" />
-                            Save for later
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeFromCart(item.id)}
-                            className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Remove
-                          </Button>
+                        
+                        {/* Action Buttons */}
+                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => moveToWishlist(item.product.id)}
+                              className="text-gray-600 hover:text-purple-600"
+                            >
+                              <Heart className="h-4 w-4 mr-1" />
+                              Save for later
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFromCart(item.id)}
+                              className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Remove
+                            </Button>
+                          </div>
+                          <Link href={`/products/${item.product.id}`}>
+                            <Button variant="outline" size="sm">
+                              View Product
+                            </Button>
+                          </Link>
                         </div>
-                        <Link href={`/products/${item.product.id}`}>
-                          <Button variant="outline" size="sm">
-                            View Product
-                          </Button>
-                        </Link>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  )
+                })}
               </div>
 
               {/* Delivery Info */}

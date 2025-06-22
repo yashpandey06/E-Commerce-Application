@@ -211,6 +211,13 @@ export default function ProfileContent() {
     }
   }
 
+  // Helper function to safely convert to number
+  const safeNumber = (value: any): number => {
+    if (typeof value === 'number') return value
+    if (typeof value === 'string') return parseFloat(value) || 0
+    return 0
+  }
+
   const fetchOrders = async () => {
     setOrdersLoading(true)
     try {
@@ -230,10 +237,13 @@ export default function ProfileContent() {
         
         setOrders(ordersData)
         
-        // Calculate user stats
+        // Calculate user stats with safe number conversion
         const stats: UserStats = {
           total_orders: ordersData.length,
-          total_spent: ordersData.reduce((sum: number, order: Order) => sum + order.total_amount, 0),
+          total_spent: ordersData.reduce((sum: number, order: Order) => {
+            const orderAmount = safeNumber(order.total_amount)
+            return sum + orderAmount
+          }, 0),
           pending_orders: ordersData.filter((order: Order) => 
             ["created", "confirmed", "shipped"].includes(order.status.toLowerCase())
           ).length
@@ -555,7 +565,7 @@ export default function ProfileContent() {
                       <div className="text-xs text-gray-500">Orders</div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-green-600">₹{userStats.total_spent.toFixed(0)}</div>
+                      <div className="text-2xl font-bold text-green-600">₹{safeNumber(userStats.total_spent).toFixed(0)}</div>
                       <div className="text-xs text-gray-500">Spent</div>
                     </div>
                     <div>
@@ -855,7 +865,7 @@ export default function ProfileContent() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <DollarSign className="w-4 h-4" />
-                                  <span className="font-semibold">${order.total_amount.toFixed(2)}</span>
+                                  <span className="font-semibold">${safeNumber(order.total_amount).toFixed(2)}</span>
                                 </div>
                               </div>
                             </div>
@@ -925,7 +935,7 @@ export default function ProfileContent() {
                                   <div className="min-w-0 flex-1">
                                     <div className="font-medium text-sm line-clamp-1 text-gray-900 dark:text-gray-100">{item.product_name}</div>
                                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                                      Qty: {item.quantity} • ${item.price.toFixed(2)}
+                                      Qty: {item.quantity} • ${safeNumber(item.price).toFixed(2)}
                                     </div>
                                   </div>
                                 </div>
