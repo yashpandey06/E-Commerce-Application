@@ -1,6 +1,6 @@
 # 🛍️ Kommercio - Full-Stack E-commerce Platform
 
-A modern, full-featured e-commerce platform built with Next.js 14, FastAPI, and PostgreSQL. Features a beautiful UI with dark mode support, comprehensive product management, secure payments, and vendor capabilities.
+A modern, full-featured e-commerce platform built with Next.js 14, flask, and PostgreSQL. Features a beautiful UI with dark mode support, comprehensive product management, secure payments, and vendor capabilities.
 
 ![Screenshot 2025-05-28 at 8 50 48 PM](https://github.com/user-attachments/assets/edb9bd38-a3e1-4cf7-b4b1-2955351520ef)
 
@@ -49,7 +49,7 @@ A modern, full-featured e-commerce platform built with Next.js 14, FastAPI, and 
 - **React Context** - State management
 
 ### Backend
-- **FastAPI** - High-performance Python web framework
+- **flask** - High-performance Python web framework
 - **PostgreSQL** - Reliable relational database
 - **JWT** - Secure authentication
 - **Stripe** - Payment processing
@@ -204,7 +204,7 @@ ecommerce-fullstack/
 ├── contexts/                     # React contexts
 │   ├── auth-context.tsx        # Authentication
 │   └── cart-context.tsx        # Shopping cart
-├── backend/                      # FastAPI backend
+├── backend/                      # flask backend
 │   ├── main.py                 # Main application
 │   ├── requirements.txt        # Python dependencies
 │   └── vercel.json            # Deployment config
@@ -332,7 +332,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Shadcn/ui** for the beautiful component library
 - **Vercel** for seamless deployment
 - **Stripe** for secure payment processing
-- **FastAPI** for the excellent Python framework
+- **flask** for the excellent Python framework
 - **Next.js** team for the amazing React framework
 
 ## 📞 Support
