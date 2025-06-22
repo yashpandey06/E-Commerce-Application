@@ -73,7 +73,7 @@ Before running this application, make sure you have:
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/ansh7432/Kommercio.git
+git clone git@github.com:yashpandey06/E-Commerce-Application.git
 cd ecommerce-fullstack
 ```
 
